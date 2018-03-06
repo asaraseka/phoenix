@@ -739,7 +739,7 @@ public abstract class BaseTest {
             throw new IllegalStateException("Used up all unique names");
         }
         TABLE_COUNTER.incrementAndGet();
-        return "T" + Integer.toString(MAX_SUFFIX_VALUE + nextName).substring(1);
+        return "T" + Integer.toString(MAX_SUFFIX_VALUE + nextName).substring(1) + "lowercase";
     }
 
     private static AtomicInteger SEQ_NAME_SUFFIX = new AtomicInteger(0);

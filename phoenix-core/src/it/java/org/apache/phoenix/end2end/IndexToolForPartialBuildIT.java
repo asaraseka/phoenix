@@ -121,7 +121,7 @@ public class IndexToolForPartialBuildIT extends BaseOwnClusterIT {
     public void testSecondaryIndex() throws Exception {
         String schemaName = generateUniqueName();
         String dataTableName = generateUniqueName();
-        String fullTableName = SchemaUtil.getTableName(schemaName, dataTableName);
+        String fullTableName = "\""+schemaName+"\".\""+dataTableName+"\"";
         final String indxTable = String.format("%s_%s", dataTableName, FailingRegionObserver.INDEX_NAME);
         Properties props = PropertiesUtil.deepCopy(TEST_PROPERTIES);
         props.setProperty(QueryServices.TRANSACTIONS_ENABLED, Boolean.TRUE.toString());
