@@ -618,8 +618,11 @@ public class PTableImpl implements PTable {
 
         this.parentSchemaName = parentSchemaName;
         this.parentTableName = parentTableName;
-        this.parentName = parentTableName == null ? null : PNameFactory.newName(SchemaUtil.getTableName(
-            parentSchemaName!=null ? parentSchemaName.getString() : null, parentTableName.getString()));
+
+        if (parentTableName != null) {
+            String schema = parentSchemaName != null ? parentSchemaName.getString() : null;
+            this.parentName = SchemaUtil.getPhysicalHBaseTableName(schema, parentTableName.getString(), isNamespaceMapped);
+        }
         estimatedSize += PNameFactory.getEstimatedSize(this.parentName);
 
         this.physicalNames = physicalNames == null ? ImmutableList.<PName>of() : ImmutableList.copyOf(physicalNames);

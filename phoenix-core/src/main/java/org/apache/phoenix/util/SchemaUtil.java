@@ -283,7 +283,16 @@ public class SchemaUtil {
     }
 
     public static String getTableName(String schemaName, String tableName) {
-        return getName(schemaName,tableName, false);
+        return getTableName(schemaName, tableName, false);
+    }
+
+    private static String getTableName(String optionalQualifier, String name, boolean caseSensitive) {
+        String cq = caseSensitive ? "\"" + name + "\"" : name;
+        if (optionalQualifier == null || optionalQualifier.isEmpty()) {
+            return cq;
+        }
+        String cf = caseSensitive ? "\"" + optionalQualifier + "\"" : optionalQualifier;
+        return cf + QueryConstants.NAMESPACE_SEPARATOR + cq;
     }
 
     private static String getName(String optionalQualifier, String name, boolean caseSensitive) {
@@ -301,7 +310,7 @@ public class SchemaUtil {
     }
 
     public static String getTableName(byte[] schemaName, byte[] tableName) {
-        return getName(schemaName, tableName);
+        return Bytes.toString(getTableNameAsBytes(schemaName, tableName));
     }
 
     public static String getColumnDisplayName(byte[] cf, byte[] cq) {
@@ -354,7 +363,13 @@ public class SchemaUtil {
     }
 
     public static byte[] getTableNameAsBytes(byte[] schemaName, byte[] tableName) {
-        return getNameAsBytes(schemaName, tableName);
+        if (schemaName == null || schemaName.length == 0) {
+            return tableName;
+        } else if ((tableName == null || tableName.length == 0)) {
+            return schemaName;
+        } else {
+            return ByteUtil.concat(schemaName, QueryConstants.NAMESPACE_SEPARATOR_BYTES, tableName);
+        }
     }
 
     private static byte[] getNameAsBytes(byte[] nameOne, byte[] nameTwo) {
