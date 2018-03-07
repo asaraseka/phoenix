@@ -72,7 +72,7 @@ public class IndexToolUtil {
      */
     public static void updateIndexState(Connection connection, final String masterTable , final String indexTable, PIndexState state) throws SQLException {
         Preconditions.checkNotNull(connection);
-        final String alterQuery = String.format(ALTER_INDEX_QUERY_TEMPLATE,indexTable,masterTable,state.name());
+        final String alterQuery = String.format(ALTER_INDEX_QUERY_TEMPLATE,indexTable,masterTable.replace(':', '.'),state.name());
         connection.createStatement().execute(alterQuery);
         LOG.info(" Updated the status of the index {} to {} " , indexTable , state.name());
     }

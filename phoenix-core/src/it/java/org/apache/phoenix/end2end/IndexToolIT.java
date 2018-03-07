@@ -92,6 +92,8 @@ public class IndexToolIT extends BaseTest {
         Map<String, String> clientProps = Maps.newHashMapWithExpectedSize(2);
         clientProps.put(QueryServices.TRANSACTIONS_ENABLED, Boolean.TRUE.toString());
         clientProps.put(QueryServices.FORCE_ROW_KEY_ORDER_ATTRIB, Boolean.TRUE.toString());
+        clientProps.put(QueryServices.IS_NAMESPACE_MAPPING_ENABLED, Boolean.TRUE.toString());
+        clientProps.put(QueryServices.IS_SYSTEM_TABLE_MAPPED_TO_NAMESPACE, Boolean.TRUE.toString());
         setUpTestDriver(new ReadOnlyProps(serverProps.entrySet().iterator()),
             new ReadOnlyProps(clientProps.entrySet().iterator()));
     }
@@ -127,6 +129,7 @@ public class IndexToolIT extends BaseTest {
         Properties props = PropertiesUtil.deepCopy(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(getUrl(), props);
         try {
+            conn.createStatement().execute("create SCHEMA if not exists \"" + schemaName + "\"");
             String stmString1 =
                     "CREATE TABLE " + dataTableFullName
                             + " (ID INTEGER NOT NULL PRIMARY KEY, NAME VARCHAR, ZIP INTEGER) "
@@ -200,7 +203,7 @@ public class IndexToolIT extends BaseTest {
             // assert we are pulling from index table.
             rs = conn.createStatement().executeQuery("EXPLAIN " + selectSql);
             actualExplainPlan = QueryUtil.getExplainPlan(rs);
-            assertExplainPlan(localIndex, actualExplainPlan, schemaName+"."+dataTableName, indexTableFullName);
+            assertExplainPlan(localIndex, actualExplainPlan, schemaName+":"+dataTableName, indexTableFullName);
 
             rs = conn.createStatement().executeQuery(selectSql);
             assertTrue(rs.next());
@@ -301,6 +304,8 @@ public class IndexToolIT extends BaseTest {
         IndexTool indexingTool = new IndexTool();
         Configuration conf = new Configuration(getUtility().getConfiguration());
         conf.set(QueryServices.TRANSACTIONS_ENABLED, Boolean.TRUE.toString());
+        conf.set(QueryServices.IS_NAMESPACE_MAPPING_ENABLED, Boolean.TRUE.toString());
+        conf.set(QueryServices.IS_SYSTEM_TABLE_MAPPED_TO_NAMESPACE, Boolean.TRUE.toString());
         indexingTool.setConf(conf);
         final String[] cmdArgs =
                 getArgValues(directApi, useSnapshot, schemaName, dataTableName, indexTableName);
