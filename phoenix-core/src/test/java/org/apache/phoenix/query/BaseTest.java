@@ -445,6 +445,8 @@ public abstract class BaseTest {
      */
     protected static String setUpTestCluster(@Nonnull Configuration conf, ReadOnlyProps overrideProps) throws Exception {
         boolean isDistributedCluster = isDistributedClusterModeEnabled(conf);
+        conf.setBoolean(QueryServices.IS_NAMESPACE_MAPPING_ENABLED, true);
+        conf.setBoolean(QueryServices.IS_SYSTEM_TABLE_MAPPED_TO_NAMESPACE, true);
         if (!isDistributedCluster) {
             return initMiniCluster(conf, overrideProps);
        } else {
@@ -656,6 +658,8 @@ public abstract class BaseTest {
             destroyDriver(oldDriver);
         }
         Properties driverProps = PropertiesUtil.deepCopy(TEST_PROPERTIES);
+        driverProps.setProperty(QueryServices.IS_NAMESPACE_MAPPING_ENABLED, "true");
+        driverProps.setProperty(QueryServices.IS_SYSTEM_TABLE_MAPPED_TO_NAMESPACE, "true");
         Connection conn = newDriver.connect(url, driverProps);
         conn.close();
         return newDriver;
@@ -741,7 +745,7 @@ public abstract class BaseTest {
             throw new IllegalStateException("Used up all unique names");
         }
         TABLE_COUNTER.incrementAndGet();
-        return "T" + Integer.toString(MAX_SUFFIX_VALUE + nextName).substring(1) + "lowercase";
+        return "T" + Integer.toString(MAX_SUFFIX_VALUE + nextName).substring(1);
     }
 
     private static AtomicInteger SEQ_NAME_SUFFIX = new AtomicInteger(0);
@@ -781,6 +785,8 @@ public abstract class BaseTest {
         String schema = SchemaUtil.getSchemaNameFromFullName(tableName);
         if (!schema.equals("")) {
             Properties props = new Properties();
+            props.setProperty(QueryServices.IS_SYSTEM_TABLE_MAPPED_TO_NAMESPACE, "true");
+            props.setProperty(QueryServices.IS_NAMESPACE_MAPPING_ENABLED, "true");
             if (ts != null) {
                 props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts));
             }

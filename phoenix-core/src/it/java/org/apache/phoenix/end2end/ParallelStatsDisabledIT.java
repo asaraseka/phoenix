@@ -18,7 +18,10 @@
 
 package org.apache.phoenix.end2end;
 
+import java.util.Properties;
+
 import org.apache.phoenix.query.BaseTest;
+import org.apache.phoenix.query.QueryServices;
 import org.apache.phoenix.util.ReadOnlyProps;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -34,7 +37,10 @@ public abstract class ParallelStatsDisabledIT extends BaseTest {
 
     @BeforeClass
     public static final void doSetup() throws Exception {
-        setUpTestDriver(ReadOnlyProps.EMPTY_PROPS);
+        Properties properties = new Properties();
+        properties.setProperty(QueryServices.IS_SYSTEM_TABLE_MAPPED_TO_NAMESPACE, "true");
+        properties.setProperty(QueryServices.IS_NAMESPACE_MAPPING_ENABLED, "true");
+        setUpTestDriver(ReadOnlyProps.EMPTY_PROPS.addAll(properties));
     }
 
     @AfterClass

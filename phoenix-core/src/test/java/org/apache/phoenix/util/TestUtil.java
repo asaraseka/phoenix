@@ -272,10 +272,11 @@ public class TestUtil {
      * Read-only properties used by all tests
      */
     public static final Properties TEST_PROPERTIES = new Properties() {
-        @Override
-        public String put(Object key, Object value) {
-            throw new UnsupportedOperationException();
+        {
+            put(QueryServices.IS_SYSTEM_TABLE_MAPPED_TO_NAMESPACE, "true");
+            put(QueryServices.IS_NAMESPACE_MAPPING_ENABLED, "true");
         }
+
         @Override
         public void clear() {
             throw new UnsupportedOperationException();
