@@ -102,7 +102,7 @@ public class PhoenixDatabaseMetaData implements DatabaseMetaData {
     public static final TableName SYSTEM_CATALOG_HBASE_TABLE_NAME = TableName.valueOf(SYSTEM_CATALOG_NAME);
     public static final byte[] SYSTEM_CATALOG_NAME_BYTES = Bytes.toBytes(SYSTEM_CATALOG_NAME);
     public static final String SYSTEM_STATS_TABLE = "STATS";
-    public static final String SYSTEM_STATS_NAME = SchemaUtil.getTableName(SYSTEM_CATALOG_SCHEMA, SYSTEM_STATS_TABLE);
+    public static final String SYSTEM_STATS_NAME = SchemaUtil.getTableName(SYSTEM_CATALOG_SCHEMA, SYSTEM_STATS_TABLE).replace(':', '.');
     public static final String IS_NAMESPACE_MAPPED = "IS_NAMESPACE_MAPPED";
     public static final byte[] IS_NAMESPACE_MAPPED_BYTES = Bytes.toBytes(IS_NAMESPACE_MAPPED);
     public static final byte[] SYSTEM_STATS_NAME_BYTES = Bytes.toBytes(SYSTEM_STATS_NAME);

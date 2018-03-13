@@ -34,6 +34,7 @@ import java.util.regex.Pattern;
 
 import org.apache.phoenix.cache.ServerCacheClient;
 import org.apache.phoenix.end2end.ParallelStatsDisabledIT;
+import org.apache.phoenix.query.QueryServices;
 import org.apache.phoenix.util.PropertiesUtil;
 import org.apache.phoenix.util.SchemaUtil;
 import org.apache.phoenix.util.StringUtil;
@@ -119,6 +120,7 @@ public abstract class BaseJoinIT extends ParallelStatsDisabledIT {
         String realName = virtualNameToRealNameMap.get(virtualName);
         if (realName == null) {
             realName = SchemaUtil.getTableName(schemaName, generateUniqueName());
+            realName = realName.replace(':', '.');
             virtualNameToRealNameMap.put(virtualName, realName);
             createTable(conn, virtualName, realName);
             initValues(conn, virtualName, realName);
@@ -132,11 +134,14 @@ public abstract class BaseJoinIT extends ParallelStatsDisabledIT {
     }
 
     private void createTable(Connection conn, String virtualName, String realName) throws SQLException {
+
         String ddl = tableDDLMap.get(virtualName);
         if (ddl == null) {
             throw new IllegalStateException("Expected to find " + virtualName + " in " + tableDDLMap);
         }
         ddl =  ddl.replace(virtualName, realName);
+        String schema = SchemaUtil.getSchemaNameFromFullName(realName);
+        conn.createStatement().execute("create schema if not exists \"" + schema + "\"");
         conn.createStatement().execute(ddl);
     }
 
@@ -159,7 +164,7 @@ public abstract class BaseJoinIT extends ParallelStatsDisabledIT {
         int count = 0;
         for (Map.Entry<String, String>entry : virtualNameToRealNameMap.entrySet()) {
             virtualNames[count] = entry.getKey();
-            realNames[count] = entry.getValue();
+            realNames[count] = entry.getValue().replace('.', ':');
             count++;
         }
         realNames[count] = schemaName;
@@ -456,6 +461,8 @@ public abstract class BaseJoinIT extends ParallelStatsDisabledIT {
 	protected Connection getConnection() throws SQLException {
 		Properties props = PropertiesUtil.deepCopy(TEST_PROPERTIES);
 		props.put(ServerCacheClient.HASH_JOIN_SERVER_CACHE_RESEND_PER_SERVER, "true");
+		props.put(QueryServices.IS_NAMESPACE_MAPPING_ENABLED, "true");
+		props.put(QueryServices.IS_SYSTEM_TABLE_MAPPED_TO_NAMESPACE, "true");
 		return DriverManager.getConnection(getUrl(), props);
 	}
 	
