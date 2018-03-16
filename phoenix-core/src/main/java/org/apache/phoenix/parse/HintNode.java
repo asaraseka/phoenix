@@ -44,6 +44,10 @@ public class HintNode {
          */
         RANGE_SCAN,
         /**
+         * Forces a dynamic server filter for the hash join query
+         */
+        FORCE_DYNAMIC_JOIN_EXPRESSION,
+        /**
          * Forces a skip scan to be used to process the query.
          */
         SKIP_SCAN,

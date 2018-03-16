@@ -104,6 +104,7 @@ public class QueryCompiler {
     private final boolean projectTuples;
     private final boolean useSortMergeJoin;
     private final boolean noChildParentJoinOptimization;
+    private final boolean forceDynamicJoinOptimization;
 
     public QueryCompiler(PhoenixStatement statement, SelectStatement select, ColumnResolver resolver) throws SQLException {
         this(statement, select, resolver, Collections.<PDatum>emptyList(), null, new SequenceManager(statement), true);
@@ -124,6 +125,7 @@ public class QueryCompiler {
         this.projectTuples = projectTuples;
         this.useSortMergeJoin = select.getHint().hasHint(Hint.USE_SORT_MERGE_JOIN);
         this.noChildParentJoinOptimization = select.getHint().hasHint(Hint.NO_CHILD_PARENT_JOIN_OPTIMIZATION);
+        this.forceDynamicJoinOptimization = select.getHint().hasHint(Hint.FORCE_DYNAMIC_JOIN_EXPRESSION);
         if (statement.getConnection().getQueryServices().getLowestClusterHBaseVersion() >= PhoenixDatabaseMetaData.ESSENTIAL_FAMILY_VERSION_THRESHOLD) {
             this.scan.setAttribute(LOAD_COLUMN_FAMILIES_ON_DEMAND_ATTR, QueryConstants.TRUE);
         }
@@ -311,13 +313,14 @@ public class QueryCompiler {
                 joinExpressions[i] = joinConditions.getFirst();
                 List<Expression> hashExpressions = joinConditions.getSecond();
                 Pair<Expression, Expression> keyRangeExpressions = new Pair<Expression, Expression>(null, null);
-                boolean optimized = getKeyExpressionCombinations(keyRangeExpressions, context, joinTable.getStatement(), tableRef, joinSpec.getType(), joinExpressions[i], hashExpressions);
+                boolean optimized = getKeyExpressionCombinations(keyRangeExpressions, context, joinTable.getStatement(), tableRef, joinSpec.getType(), joinExpressions[i], hashExpressions, forceDynamicJoinOptimization);
                 Expression keyRangeLhsExpression = keyRangeExpressions.getFirst();
                 Expression keyRangeRhsExpression = keyRangeExpressions.getSecond();
                 joinTypes[i] = joinSpec.getType();
                 if (i < count - 1) {
                     fieldPositions[i + 1] = fieldPositions[i] + (tables[i] == null ? 0 : (tables[i].getColumns().size() - tables[i].getPKColumns().size()));
                 }
+
                 hashPlans[i] = new HashSubPlan(i, subPlans[i], optimized ? null : hashExpressions, joinSpec.isSingleValueOnly(), keyRangeLhsExpression, keyRangeRhsExpression);
             }
             TupleProjector.serializeProjectorIntoScan(context.getScan(), tupleProjector);
@@ -390,7 +393,7 @@ public class QueryCompiler {
                     new JoinType[] { type == JoinType.Right ? JoinType.Left : type }, new boolean[] { true },
                     new PTable[] { lhsTable }, new int[] { fieldPosition }, postJoinFilterExpression,  QueryUtil.getOffsetLimit(limit, offset));
             Pair<Expression, Expression> keyRangeExpressions = new Pair<Expression, Expression>(null, null);
-            getKeyExpressionCombinations(keyRangeExpressions, context, joinTable.getStatement(), rhsTableRef, type, joinExpressions, hashExpressions);
+            getKeyExpressionCombinations(keyRangeExpressions, context, joinTable.getStatement(), rhsTableRef, type, joinExpressions, hashExpressions, forceDynamicJoinOptimization);
             return HashJoinPlan.create(joinTable.getStatement(), rhsPlan, joinInfo, new HashSubPlan[] {new HashSubPlan(0, lhsPlan, hashExpressions, false, keyRangeExpressions.getFirst(), keyRangeExpressions.getSecond())});
         }
 
@@ -449,7 +452,7 @@ public class QueryCompiler {
         return compileSingleFlatQuery(context, select, binds, asSubquery, false, innerPlan, null, isInRowKeyOrder);
     }
 
-    private boolean getKeyExpressionCombinations(Pair<Expression, Expression> combination, StatementContext context, SelectStatement select, TableRef table, JoinType type, final List<Expression> joinExpressions, final List<Expression> hashExpressions) throws SQLException {
+    private boolean getKeyExpressionCombinations(Pair<Expression, Expression> combination, StatementContext context, SelectStatement select, TableRef table, JoinType type, final List<Expression> joinExpressions, final List<Expression> hashExpressions, boolean forceOptimiation) throws SQLException {
         if ((type != JoinType.Inner && type != JoinType.Semi) || this.noChildParentJoinOptimization)
             return false;
 
@@ -458,8 +461,14 @@ public class QueryCompiler {
         contextCopy.setCurrentTable(table);
         List<Expression> lhsCombination = Lists.<Expression> newArrayList();
         boolean complete = WhereOptimizer.getKeyExpressionCombination(lhsCombination, contextCopy, select, joinExpressions);
-        if (lhsCombination.isEmpty())
-            return false;
+        if (lhsCombination.isEmpty()) {
+            if (!forceOptimiation || joinExpressions.size() != 1) {
+                return false;
+            }
+            else {
+                lhsCombination.add(joinExpressions.get(0));
+            }
+        }
 
         List<Expression> rhsCombination = Lists.newArrayListWithExpectedSize(lhsCombination.size());
         for (int i = 0; i < lhsCombination.size(); i++) {
