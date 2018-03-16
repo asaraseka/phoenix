@@ -462,11 +462,11 @@ public class QueryCompiler {
         List<Expression> lhsCombination = Lists.<Expression> newArrayList();
         boolean complete = WhereOptimizer.getKeyExpressionCombination(lhsCombination, contextCopy, select, joinExpressions);
         if (lhsCombination.isEmpty()) {
-            if (!forceOptimiation || joinExpressions.size() != 1) {
-                return false;
+            if (forceOptimiation && joinExpressions.size() == 1) {
+                lhsCombination.add(joinExpressions.get(0));
             }
             else {
-                lhsCombination.add(joinExpressions.get(0));
+                return false;
             }
         }
 
